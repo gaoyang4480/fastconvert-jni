@@ -34,7 +34,7 @@ public class FastConverJNI {
         MetaData metaData = new MetaData();
         metaData.setName("test");
         metaData.setValue("test value");
-        //metaDataList.add(metaData);
+        metaDataList.add(metaData);
         // 构造附件数据.
         List<Attachments> attachmentDataList = new ArrayList<>();
         Attachments attachments = new Attachments();
@@ -45,15 +45,15 @@ public class FastConverJNI {
         attachments.setSize(2.415);
         attachments.setVisible(true);
         attachments.setFile("test".getBytes());
-        //attachmentDataList.add(attachments);
+        attachmentDataList.add(attachments);
         long startTime = System.currentTimeMillis();
         for (int i = 0; i < 1; i++) {
             byte[] resultData = convertJni.convert("001", templateOFDData, inData, metaDataList, attachmentDataList, 10);
             if (resultData != null) {
-//                OutputStream resultOutStream = new FileOutputStream("./template_output.ofd");
-//                resultOutStream.write(resultData);
-//                resultOutStream.close();
-//                System.out.println("write result ofd successfully");
+                OutputStream resultOutStream = new FileOutputStream("./template_output.ofd");
+                resultOutStream.write(resultData);
+                resultOutStream.close();
+                System.out.println("write result ofd successfully");
             }
         }
         System.out.println("转换耗时： " + (System.currentTimeMillis() - startTime) + "ms");
