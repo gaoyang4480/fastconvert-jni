@@ -15,15 +15,46 @@ public class FastConverJNI {
 
     public native byte[] convert(String taskId, byte[] templateOFDData, byte[] inData, List<MetaData> metaDataList, List<Attachments> attachmentDataList, long sealId);
 
+    public native String getErrMessage(int statusCode);
+
+    public native String getLastError();
+
+    public native String getVersion();
+
+    public native String getMacAddr();
+
+    public native String getCpuSerial();
+
+    public native String getMainBoardSerial();
+
+    public native String getMachineCode();
+
     public static void main(String[] args) throws IOException {
         System.loadLibrary("converter");
         FastConverJNI convertJni = new FastConverJNI();
+
+        String version = convertJni.getVersion();
+        System.out.println("version: " + version);
+
+        String macAddr = convertJni.getMacAddr();
+        System.out.println("macAddr: " + macAddr);
+
+        String cpuSerialNumber = convertJni.getCpuSerial();
+        System.out.println("cpuSerialNumber: " + cpuSerialNumber);
+
+        String mainBoardSerialNumber = convertJni.getMainBoardSerial();
+        System.out.println("mainBoardSerialNumber: " + mainBoardSerialNumber);
+
+        String machineCode = convertJni.getMachineCode();
+        System.out.println("machineCode: " + machineCode);
+
         System.out.println("convert begin");
         byte[] configData = getFileByteArray(new File("C:\\Users\\gaoyang\\Downloads\\template-ofd-converter\\config.xml"));
         String configDataStr = byteToString(configData);
-        int ret = convertJni.initConverter("123456", configDataStr);
+        int ret = convertJni.initConverter("", configDataStr);
         if (ret < 0) {
-            System.err.println("init converter error");
+            String errMessage = convertJni.getErrMessage(ret);
+            System.err.println("init converter error: " + errMessage + ret);
             return;
         }
 
