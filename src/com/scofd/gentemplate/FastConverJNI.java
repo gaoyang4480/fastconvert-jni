@@ -4,6 +4,7 @@ import com.scofd.gentemplate.model.Attachments;
 import com.scofd.gentemplate.model.MetaData;
 
 import java.io.*;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -30,6 +31,11 @@ public class FastConverJNI {
     public native String getMachineCode();
 
     public static void main(String[] args) throws IOException {
+        if (args.length < 2) {
+            System.err.println("Usage: <模板基目录路径> <模板目录名>");
+            return;
+        }
+
         System.loadLibrary("converter");
         FastConverJNI convertJni = new FastConverJNI();
 
@@ -49,7 +55,8 @@ public class FastConverJNI {
         System.out.println("machineCode: " + machineCode);
 
         System.out.println("convert begin");
-        byte[] configData = getFileByteArray(new File("C:\\Users\\gaoyang\\Downloads\\template-ofd-converter\\config.xml"));
+        String templateBaseDir = args[0];
+        byte[] configData = getFileByteArray(Paths.get(templateBaseDir, "config.xml").toFile());
         String configDataStr = byteToString(configData);
         int ret = convertJni.initConverter("", configDataStr);
         if (ret < 0) {
@@ -58,8 +65,9 @@ public class FastConverJNI {
             return;
         }
 
-        byte[] templateOFDData = getFileByteArray(new File("C:\\Users\\gaoyang\\Downloads\\template-ofd-converter\\template1\\template.ofd"));
-        byte[] inData = getFileByteArray(new File("C:\\Users\\gaoyang\\Downloads\\template-ofd-converter\\template1\\data.xml"));
+        String templateDir = args[1];
+        byte[] templateOFDData = getFileByteArray(Paths.get(templateBaseDir, templateDir, "template.ofd").toFile());
+        byte[] inData = getFileByteArray(Paths.get(templateBaseDir, templateDir, "data.xml").toFile());
         // 构造元数据.
         List<MetaData> metaDataList = new ArrayList<>();
         MetaData metaData = new MetaData();
@@ -81,7 +89,7 @@ public class FastConverJNI {
         for (int i = 0; i < 1; i++) {
             byte[] resultData = convertJni.convert("001", templateOFDData, inData, metaDataList, attachmentDataList, 10);
             if (resultData != null) {
-                OutputStream resultOutStream = new FileOutputStream("./template_output.ofd");
+                OutputStream resultOutStream = new FileOutputStream(Paths.get(templateBaseDir, templateDir, "template_output.ofd").toString());
                 resultOutStream.write(resultData);
                 resultOutStream.close();
                 System.out.println("write result ofd successfully");
