@@ -39,4 +39,4 @@ logs/
 
 .ofd
 
-.class
+*.class

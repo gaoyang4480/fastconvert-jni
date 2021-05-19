@@ -67,13 +67,14 @@ public class FastConverJNI {
 
         String templateDir = args[1];
         byte[] templateOFDData = getFileByteArray(Paths.get(templateBaseDir, templateDir, "template.ofd").toFile());
+
         byte[] inData = getFileByteArray(Paths.get(templateBaseDir, templateDir, "data.xml").toFile());
         // 构造元数据.
         List<MetaData> metaDataList = new ArrayList<>();
         MetaData metaData = new MetaData();
         metaData.setName("test");
         metaData.setValue("test value");
-        metaDataList.add(metaData);
+        //metaDataList.add(metaData);
         // 构造附件数据.
         List<Attachments> attachmentDataList = new ArrayList<>();
         Attachments attachments = new Attachments();
@@ -84,7 +85,7 @@ public class FastConverJNI {
         attachments.setSize(2.415);
         attachments.setVisible(true);
         attachments.setFile("test".getBytes());
-        attachmentDataList.add(attachments);
+        //attachmentDataList.add(attachments);
         long startTime = System.currentTimeMillis();
         for (int i = 0; i < 1; i++) {
             byte[] resultData = convertJni.convert("001", templateOFDData, inData, metaDataList, attachmentDataList, 10);
