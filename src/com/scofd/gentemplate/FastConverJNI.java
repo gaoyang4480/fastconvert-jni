@@ -7,8 +7,13 @@ import java.io.*;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class FastConverJNI {
+
+    static final double convertCount = 1;
 
     public native int initConverter(String key, String configData);
 
@@ -86,20 +91,65 @@ public class FastConverJNI {
         attachments.setVisible(true);
         attachments.setFile("test".getBytes());
         //attachmentDataList.add(attachments);
-        long startTime = System.currentTimeMillis();
-        for (int i = 0; i < 1; i++) {
-            byte[] resultData = convertJni.convert("001", templateOFDData, inData, metaDataList, attachmentDataList, 10);
-            if (resultData != null) {
-                OutputStream resultOutStream = new FileOutputStream(Paths.get(templateBaseDir, templateDir, "template_output.ofd").toString());
-                resultOutStream.write(resultData);
-                resultOutStream.close();
-                System.out.println("write result ofd successfully");
-            }
-        }
-        System.out.println("转换耗时： " + (System.currentTimeMillis() - startTime) + "ms");
 
-        convertJni.finalizeConverter();
-        System.out.println("convert end");
+        List<Callable<Integer>> list = null;
+        ExecutorService cachedThreadPool = Executors.newFixedThreadPool(40);
+        long cc = System.currentTimeMillis();
+        try {
+            list = getCallableList(convertJni, templateOFDData, inData, metaDataList, attachmentDataList);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        try {
+            Long beginTime = System.currentTimeMillis();
+            cachedThreadPool.invokeAll(list);
+            long endTime = System.currentTimeMillis();
+            long coustTime = endTime - beginTime;
+            System.out.println("**************************************************耗时:" + coustTime);
+            System.out.println("总耗时：" + (endTime - cc) + "毫秒");
+            System.out.println("平均每秒转换数：" + convertCount / ((endTime - cc) / 1000.0) + "");
+            System.out.println("平均：" + (endTime - cc) / convertCount);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+
+//        long startTime = System.currentTimeMillis();
+//        for (int i = 0; i < 1; i++) {
+//            byte[] resultData = convertJni.convert("001", templateOFDData, inData, metaDataList, attachmentDataList, 10);
+//            if (resultData != null) {
+//                OutputStream resultOutStream = new FileOutputStream(Paths.get(templateBaseDir, templateDir, "template_output.ofd").toString());
+//                resultOutStream.write(resultData);
+//                resultOutStream.close();
+//                System.out.println("write result ofd successfully");
+//            }
+//        }
+//        System.out.println("转换耗时： " + (System.currentTimeMillis() - startTime) + "ms");
+//
+//        convertJni.finalizeConverter();
+//        System.out.println("convert end");
+    }
+
+    private static List<Callable<Integer>> getCallableList(FastConverJNI convertJni, byte[] templateOFDData, byte[] inData, List<MetaData> metaDataList, List<Attachments> attachmentDataList) throws Exception {
+        List<Callable<Integer>> resultList = new ArrayList<>();
+        for (int j = 0; j < convertCount; j++) {
+            final int i = j;
+            Callable<Integer> callable = () ->
+                    convert(convertJni, templateOFDData, inData, metaDataList, attachmentDataList, i);
+            resultList.add(callable);
+        }
+        return resultList;
+    }
+
+    private static int convert(FastConverJNI convertJni, byte[] templateOFDData, byte[] inData, List<MetaData> metaDataList, List<Attachments> attachmentDataList, int i) throws IOException {
+        byte[] resultData = convertJni.convert("001", templateOFDData, inData, metaDataList, attachmentDataList, 10);
+        if (1 == 1 && resultData != null) {
+            OutputStream resultOutStream = new FileOutputStream("D:\\" + i + ".ofd");
+            resultOutStream.write(resultData);
+            resultOutStream.close();
+            System.out.println("write result ofd successfully " + i + ".ofd");
+        }
+        return 0;
     }
 
     private static String byteToString(byte[] bytes) {
