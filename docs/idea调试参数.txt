@@ -1,0 +1,15 @@
+本机:
+-Djava.library.path=D:\gy\c++\projects\template-ofd-converter\bin64\vc14\Release
+
+-Djava.library.path=C:\Users\gaoyang\Desktop\libconverter\win64
+
+D:\gy\c++\projects\template-ofd-converter\data\template-ofd-converter template9
+
+wsl:
+-Djava.library.path=/mnt/d/gy/java/projects/fastconvert-jni/lib/linux/x64
+
+-Djava.library.path=/mnt/d/gy/c++/projects/template-ofd-converter/bin64/Release/
+
+/home/gy/ofd/template-ofd-converter template9
+
+
