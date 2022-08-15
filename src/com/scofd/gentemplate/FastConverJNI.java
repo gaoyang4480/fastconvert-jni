@@ -2,12 +2,11 @@ package com.scofd.gentemplate;
 
 import com.scofd.gentemplate.model.Attachments;
 import com.scofd.gentemplate.model.MetaData;
-import com.yh.scofd.agent.wrapper.model.TempInfo;
+import com.scofd.gentemplate.model.TempInfo;
 
 import java.io.*;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
@@ -15,7 +14,7 @@ import java.util.concurrent.Executors;
 
 public class FastConverJNI {
 
-    static final double convertCount = 100;
+    static final double convertCount = 1;
 
     public native int initConverter(String key, String configData);
 
@@ -24,6 +23,12 @@ public class FastConverJNI {
     public native byte[] convertImageToTemplateOFD(float docWidth, float docHeight, List<TempInfo> tempInfoList, byte[] formData);
 
     public native byte[] convert(String taskId, byte[] templateOFDData, byte[] inData, List<MetaData> metaDataList, List<Attachments> attachmentDataList, long sealId);
+
+    public native byte[] convertWithClipFont(String taskId, byte[] templateOFDData, byte[] inData, List<MetaData> metaDataList, List<Attachments> attachmentDataList, long sealId,
+                                             List<String> clipFontNames, boolean isClipFont);
+
+    public native byte[] streamConvertWithClipFont(String taskId, byte[] templateOFDData, byte[] inData, List<MetaData> metaDataList, List<Attachments> attachmentDataList, long sealId,
+                                                   List<String> clipFontNames, boolean isClipFont, boolean isStreamConvert);
 
     public native String getErrMessage(int statusCode);
 
@@ -37,7 +42,11 @@ public class FastConverJNI {
 
     public native String getMainBoardSerial();
 
+    public native String getHDID();
+
     public native String getMachineCode();
+
+    public native String[] setAttachment(String taskId, byte[] templateOFDData, List<Attachments> attachmentDataList);
 
     public static void main(String[] args) throws IOException {
         if (args.length < 2) {
@@ -45,23 +54,30 @@ public class FastConverJNI {
             return;
         }
 
+        System.loadLibrary("zlib");
+        System.loadLibrary("icuuc");
+        System.loadLibrary("icui18n");
+        System.loadLibrary("v8_libbase");
+        System.loadLibrary("v8_libplatform");
+        System.loadLibrary("v8");
+
         System.loadLibrary("converter");
         FastConverJNI convertJni = new FastConverJNI();
 
         String version = convertJni.getVersion();
         System.out.println("version: " + version);
 
-        String macAddr = convertJni.getMacAddr();
-        System.out.println("macAddr: " + macAddr);
+//        String macAddr = convertJni.getMacAddr();
+//        System.out.println("macAddr: " + macAddr);
+//
+//        String cpuSerialNumber = convertJni.getCpuSerial();
+//        System.out.println("cpuSerialNumber: " + cpuSerialNumber);
+//
+//        String mainBoardSerialNumber = convertJni.getMainBoardSerial();
+//        System.out.println("mainBoardSerialNumber: " + mainBoardSerialNumber);
 
-        String cpuSerialNumber = convertJni.getCpuSerial();
-        System.out.println("cpuSerialNumber: " + cpuSerialNumber);
-
-        String mainBoardSerialNumber = convertJni.getMainBoardSerial();
-        System.out.println("mainBoardSerialNumber: " + mainBoardSerialNumber);
-
-        String machineCode = convertJni.getMachineCode();
-        System.out.println("machineCode: " + machineCode);
+        //String machineCode = convertJni.getMachineCode();
+        //System.out.println("machineCode: " + machineCode);
 
         System.out.println("convert begin");
         String templateBaseDir = args[0];
@@ -85,9 +101,16 @@ public class FastConverJNI {
         tempInfo.setWidth(200);
         tempInfo.setHeight(200);
         tempInfo.setMmUnit(true);
-        tempInfo.setPattern(true);
-        tempInfo.setPatternWidth(50);
-        tempInfo.setPatternHeight(50);
+//        tempInfo.setPattern(true);
+//        tempInfo.setPatternWidth(50);
+//        tempInfo.setPatternHeight(50);
+        tempInfoList.add(tempInfo);
+        tempInfo = new TempInfo();
+        tempInfo.setColorVal("255 0 0");
+        tempInfo.setDpi(96);
+        tempInfo.setWidth(200);
+        tempInfo.setHeight(200);
+        tempInfo.setMmUnit(true);
         tempInfoList.add(tempInfo);
         byte[] formData = getFileByteArray(Paths.get(templateBaseDir, templateDir, "form.xml").toFile());
         long startTime = System.currentTimeMillis();
@@ -100,7 +123,7 @@ public class FastConverJNI {
         }
         */
 
-
+        ///*
         byte[] templateOFDData = getFileByteArray(Paths.get(templateBaseDir, templateDir, "template.ofd").toFile());
         byte[] inData = getFileByteArray(Paths.get(templateBaseDir, templateDir, "data.xml").toFile());
         // 构造元数据.
@@ -118,8 +141,17 @@ public class FastConverJNI {
         attachments.setModDate("2020-07-28T12:38:11");
         attachments.setSize(2.415);
         attachments.setVisible(true);
-        attachments.setFile("test".getBytes());
+        //attachments.setFile("test".getBytes());
+        attachments.setFilePath("D:\\gy\\java\\projects\\img2ofd\\img2ofd\\img2\\33.pdf");
+        attachments.setAttachRelativePath("test/test1");
         //attachmentDataList.add(attachments);
+
+//        String[] attachIdList = convertJni.setAttachment("001", templateOFDData, attachmentDataList);
+//        if (attachIdList != null) {
+//            for (int i = 0; i < attachIdList.length; ++i) {
+//                System.out.println("attachId: " + attachIdList[i]);
+//            }
+//        }
 
         List<Callable<Integer>> list = null;
         ExecutorService cachedThreadPool = Executors.newFixedThreadPool(8);
@@ -141,6 +173,7 @@ public class FastConverJNI {
         } catch (Exception e) {
             e.printStackTrace();
         }
+        //*/
 
 
 //        long startTime = System.currentTimeMillis();
@@ -172,9 +205,13 @@ public class FastConverJNI {
 
     private static int convert(FastConverJNI convertJni, byte[] templateOFDData, byte[] inData, List<MetaData> metaDataList, List<Attachments> attachmentDataList, int i) throws IOException {
         //byte[] copyTemplateOFDData = Arrays.copyOf(templateOFDData, templateOFDData.length);
+        List<String> clipFontNames = new ArrayList<>();
+        //clipFontNames.add("宋体");
+        //byte[] resultData = convertJni.convertWithClipFont("001", templateOFDData, inData, metaDataList, attachmentDataList, 10, clipFontNames, true);
         byte[] resultData = convertJni.convert("001", templateOFDData, inData, metaDataList, attachmentDataList, 10);
-        if (1 == 2 && resultData != null) {
-            OutputStream resultOutStream = new FileOutputStream("D:\\gy\\c++\\projects\\template-ofd-converter\\data\\template-ofd-converter\\template12\\" + i + ".ofd");
+        if (1 == 1 && resultData != null) {
+            //OutputStream resultOutStream = new FileOutputStream("D:\\gy\\c++\\projects\\template-ofd-converter\\data\\template-ofd-converter\\template_25\\" + i + ".ofd");
+            OutputStream resultOutStream = new FileOutputStream("./" + i + ".ofd");
             resultOutStream.write(resultData);
             resultOutStream.close();
             System.out.println("write result ofd successfully " + i + ".ofd");

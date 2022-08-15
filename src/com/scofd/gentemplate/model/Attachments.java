@@ -18,6 +18,8 @@ public class Attachments {
     private boolean Visible;
     private String Usage;
     private byte[] File;
+    private String FilePath;
+    private String AttachRelativePath;
 
     public String getName() {
         return Name;
@@ -83,4 +85,23 @@ public class Attachments {
         this.File = file;
     }
 
+    public boolean isVisible() {
+        return Visible;
+    }
+
+    public String getFilePath() {
+        return FilePath;
+    }
+
+    public void setFilePath(String filePath) {
+        FilePath = filePath;
+    }
+
+    public String getAttachRelativePath() {
+        return AttachRelativePath;
+    }
+
+    public void setAttachRelativePath(String attachRelativePath) {
+        AttachRelativePath = attachRelativePath;
+    }
 }
