@@ -1,16 +1,19 @@
 package com.scofd.gentemplate;
 
-import com.scofd.gentemplate.model.Attachments;
-import com.scofd.gentemplate.model.MetaData;
-import com.scofd.gentemplate.model.TempInfo;
+import com.scofd.gentemplate.model.*;
+import com.sun.org.apache.xerces.internal.impl.dv.util.Base64;
 
 import java.io.*;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+
+//import cn.hutool.core.codec.Base64;
 
 public class FastConverJNI {
 
@@ -46,7 +49,78 @@ public class FastConverJNI {
 
     public native String getMachineCode();
 
-    public native String[] setAttachment(String taskId, byte[] templateOFDData, List<Attachments> attachmentDataList);
+    public native String[] addAudio(String taskId, byte[] templateOFDData, List<MultiMediaData> audioDataList);
+
+    public native String[] addVideo(String taskId, byte[] templateOFDData, List<MultiMediaData> videoDataList);
+
+    public native byte[] replaceAttachment(byte[] templateOFDData, List<Attachments> attachmentDataList);
+
+    public native byte[] opgPackage(OPGPackageArgs opgPackageArgs);
+
+    /**
+     * 将file文件转换成Byte数组
+     *
+     * @param file 转换文件
+     * @return Byte数组
+     */
+    public static byte[] getBytesByFile(File file) throws IOException {
+        FileInputStream fis = null;
+        ByteArrayOutputStream bos = new ByteArrayOutputStream(1000);
+        try {
+            fis = new FileInputStream(file);
+            byte[] b = new byte[1000];
+            int n;
+            while ((n = fis.read(b)) != -1) {
+                bos.write(b, 0, n);
+            }
+            byte[] data = bos.toByteArray();
+            return data;
+        } catch (Exception e) {
+            //log.error("将文件转换成Byte数组失败", e);
+        } finally {
+            if (fis != null) {
+                fis.close();
+            }
+            bos.close();
+        }
+        return null;
+    }
+
+    /**
+     * @param bytes     byte数组
+     * @param fileRoute 文件路径
+     * @param fileName  文件名
+     */
+    public static void upload(byte[] bytes, String fileRoute, String fileName) {
+        try {
+            File directory = new File(fileRoute);
+            if (!directory.exists()) {
+                directory.mkdirs();
+            }
+            File file = new File(directory, fileName);
+            BufferedOutputStream bos = new BufferedOutputStream(Files.newOutputStream(file.toPath()));
+            bos.write(bytes);
+            bos.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static String bytesToHexString(byte[] src) {
+        StringBuilder stringBuilder = new StringBuilder("");
+        if (src == null || src.length <= 0) {
+            return null;
+        }
+        for (int i = 0; i < src.length; i++) {
+            int v = src[i] & 0xFF;
+            String hv = Integer.toHexString(v);
+            if (hv.length() < 2) {
+                stringBuilder.append(0);
+            }
+            stringBuilder.append(hv);
+        }
+        return stringBuilder.toString();
+    }
 
     public static void main(String[] args) throws IOException {
         if (args.length < 2) {
@@ -54,12 +128,20 @@ public class FastConverJNI {
             return;
         }
 
+        String path = "C:\\Users\\gaoyang\\Downloads\\boos_cz_p7.txt";
+        File file = new File(path);
+        byte[] bytes = getBytesByFile(file);
+        byte[] d = Base64.decode(new String(bytes));
+        String dStr = bytesToHexString(d);
+        upload(dStr.getBytes(StandardCharsets.UTF_8), "C:\\Users\\gaoyang\\Downloads\\", "boos_cz_p7.dat");
+
         System.loadLibrary("zlib");
         System.loadLibrary("icuuc");
         System.loadLibrary("icui18n");
         System.loadLibrary("v8_libbase");
         System.loadLibrary("v8_libplatform");
         System.loadLibrary("v8");
+        System.loadLibrary("libopg");
 
         System.loadLibrary("converter");
         FastConverJNI convertJni = new FastConverJNI();
@@ -76,8 +158,8 @@ public class FastConverJNI {
 //        String mainBoardSerialNumber = convertJni.getMainBoardSerial();
 //        System.out.println("mainBoardSerialNumber: " + mainBoardSerialNumber);
 
-        //String machineCode = convertJni.getMachineCode();
-        //System.out.println("machineCode: " + machineCode);
+        String machineCode = convertJni.getMachineCode();
+        System.out.println("machineCode: " + machineCode);
 
         System.out.println("convert begin");
         String templateBaseDir = args[0];
@@ -89,6 +171,26 @@ public class FastConverJNI {
             System.err.println("init converter error: " + errMessage + ret);
             return;
         }
+
+//        OPGPackageArgs opgPackageArgs = new OPGPackageArgs();
+//        List<OPGComponentData> componentDataList = new ArrayList<>();
+//        OPGComponentData opgComponentData = new OPGComponentData();
+//        opgComponentData.setTitle("hello");
+//        opgComponentData.setComponentFilePath("D:\\gy\\ofd\\files\\hello.ofd");
+//        List<Attachments> attachs = new ArrayList<>();
+//        Attachments attachments1 = new Attachments();
+//        attachments1.setName("test");
+//        attachments1.setFilePath("C:\\Users\\gaoyang\\Pictures\\1.jpg");
+//        attachs.add(attachments1);
+//        opgComponentData.setAttachs(attachs);
+//        componentDataList.add(opgComponentData);
+//        opgPackageArgs.setComponentDataList(componentDataList);
+//        byte[] opgPackagedData = convertJni.opgPackage(opgPackageArgs);
+//        if (opgPackagedData != null) {
+//            OutputStream resultOutStream = new FileOutputStream("test.opg");
+//            resultOutStream.write(opgPackagedData);
+//            resultOutStream.close();
+//        }
 
         String templateDir = args[1];
         /*
@@ -129,22 +231,31 @@ public class FastConverJNI {
         // 构造元数据.
         List<MetaData> metaDataList = new ArrayList<>();
         MetaData metaData = new MetaData();
-        metaData.setName("test");
-        metaData.setValue("test value");
-        //metaDataList.add(metaData);
+        metaData.setName("certificateName");
+        //metaData.setValue("刘𤧟刘");
+        //metaData.setValue("兰考测试证照目录");
+        //metaData.setValueData("刘𤧟刘".getBytes(StandardCharsets.UTF_8));
+        metaData.setValueData("兰考测试证照目录".getBytes(StandardCharsets.UTF_8));
+        metaDataList.add(metaData);
         // 构造附件数据.
         List<Attachments> attachmentDataList = new ArrayList<>();
         Attachments attachments = new Attachments();
-        attachments.setName("original_invoice");
-        attachments.setFormat("xml");
+        attachments.setName("fujian/1/经营许可证");
+        attachments.setFormat("svg");
         attachments.setCreationDate("2020-07-28T12:38:11");
         attachments.setModDate("2020-07-28T12:38:11");
         attachments.setSize(2.415);
         attachments.setVisible(true);
         //attachments.setFile("test".getBytes());
-        attachments.setFilePath("D:\\gy\\java\\projects\\img2ofd\\img2ofd\\img2\\33.pdf");
-        attachments.setAttachRelativePath("test/test1");
-        //attachmentDataList.add(attachments);
+        attachments.setFilePath("D:\\math.svg");
+        //attachments.setAttachRelativePath("test/test1");
+//        attachmentDataList.add(attachments);
+
+//        byte[] srcOFDData = getFileByteArray(Paths.get("D:\\gd.ofd").toFile());
+//        byte[] replaceOFDData = convertJni.replaceAttachment(srcOFDData, attachmentDataList);
+//        OutputStream resultOutStream = new FileOutputStream("D:\\0.ofd");
+//        resultOutStream.write(replaceOFDData);
+//        resultOutStream.close();
 
 //        String[] attachIdList = convertJni.setAttachment("001", templateOFDData, attachmentDataList);
 //        if (attachIdList != null) {
@@ -194,7 +305,7 @@ public class FastConverJNI {
 
     private static List<Callable<Integer>> getCallableList(FastConverJNI convertJni, byte[] templateOFDData, byte[] inData, List<MetaData> metaDataList, List<Attachments> attachmentDataList) throws Exception {
         List<Callable<Integer>> resultList = new ArrayList<>();
-        for (int j = 0; j < convertCount; j++) {
+        for (int j = 0; j < 1; j++) {
             final int i = j;
             Callable<Integer> callable = () ->
                     convert(convertJni, templateOFDData, inData, metaDataList, attachmentDataList, i);
@@ -208,12 +319,18 @@ public class FastConverJNI {
         List<String> clipFontNames = new ArrayList<>();
         //clipFontNames.add("宋体");
         //byte[] resultData = convertJni.convertWithClipFont("001", templateOFDData, inData, metaDataList, attachmentDataList, 10, clipFontNames, true);
-        byte[] resultData = convertJni.convert("001", templateOFDData, inData, metaDataList, attachmentDataList, 10);
+
+//        List<MultiMediaData> videoDataList = new ArrayList<>();
+//        MultiMediaData multiMediaData = new MultiMediaData("C:\\Users\\gaoyang\\Videos\\2.mp4", "mp4");
+//        videoDataList.add(multiMediaData);
+//        String[] videoResIdList = convertJni.addVideo("001", templateOFDData, videoDataList);
+
+        byte[] resultData = convertJni.convert("" + i, templateOFDData, inData, metaDataList, attachmentDataList, 10);
         if (1 == 1 && resultData != null) {
             //OutputStream resultOutStream = new FileOutputStream("D:\\gy\\c++\\projects\\template-ofd-converter\\data\\template-ofd-converter\\template_25\\" + i + ".ofd");
-            OutputStream resultOutStream = new FileOutputStream("./" + i + ".ofd");
-            resultOutStream.write(resultData);
-            resultOutStream.close();
+//            OutputStream resultOutStream = new FileOutputStream("./" + i + ".ofd");
+//            resultOutStream.write(resultData);
+//            resultOutStream.close();
             System.out.println("write result ofd successfully " + i + ".ofd");
         }
         //System.out.println("write result ofd successfully " + i + ".ofd");

@@ -12,6 +12,7 @@ public class MetaData {
 
     private String Name;
     private String Value;
+    private byte[] ValueData;
 
     public String getName() {
         return Name;
@@ -29,4 +30,11 @@ public class MetaData {
         this.Value = value;
     }
 
+    public byte[] getValueData() {
+        return ValueData;
+    }
+
+    public void setValueData(byte[] valueData) {
+        ValueData = valueData;
+    }
 }

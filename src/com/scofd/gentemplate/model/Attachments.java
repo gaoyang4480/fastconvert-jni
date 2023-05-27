@@ -10,7 +10,9 @@ package com.scofd.gentemplate.model;
  */
 public class Attachments {
 
+    private long ID;
     private String Name;
+    private String ReplaceName;
     private String Format;
     private String CreationDate;
     private String ModDate;
@@ -21,12 +23,28 @@ public class Attachments {
     private String FilePath;
     private String AttachRelativePath;
 
+    public long getID() {
+        return ID;
+    }
+
+    public void setID(long ID) {
+        this.ID = ID;
+    }
+
     public String getName() {
         return Name;
     }
 
     public void setName(String name) {
         this.Name = name;
+    }
+
+    public String getReplaceName() {
+        return ReplaceName;
+    }
+
+    public void setReplaceName(String replaceName) {
+        ReplaceName = replaceName;
     }
 
     public String getFormat() {
